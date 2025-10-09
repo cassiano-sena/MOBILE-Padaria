@@ -1,7 +1,5 @@
 package com.example.mobile_layout
 
-//import androidx.navigation.compose.AnimatedNavHost
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
