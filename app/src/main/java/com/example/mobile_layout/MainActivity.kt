@@ -1,42 +1,18 @@
 package com.example.mobile_layout
 
+//import androidx.navigation.compose.AnimatedNavHost
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -44,6 +20,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import com.example.mobile_layout.ui.theme.MOBILELayoutTheme
 import kotlinx.coroutines.launch
 
@@ -54,11 +35,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MOBILELayoutTheme {
-                // Estado do Drawer
+
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
+                val navController = rememberNavController()
 
-                // Conteúdo do Drawer (menu lateral)
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -71,10 +52,21 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(16.dp),
                                 fontWeight = FontWeight.Bold
                             )
-                            DrawerItem("Início")
-                            DrawerItem("Perfil")
-                            DrawerItem("Configurações")
-                            DrawerItem("Sair")
+                            DrawerItem("Início") {
+                                scope.launch { drawerState.close() }
+                                navController.navigate("home")
+                            }
+                            DrawerItem("Perfil") {
+                                scope.launch { drawerState.close() }
+                                navController.navigate("perfil")
+                            }
+                            DrawerItem("Configurações") {
+                                scope.launch { drawerState.close() }
+                                navController.navigate("config")
+                            }
+                            DrawerItem("Sair") {
+                                // ação de sair
+                            }
                         }
                     }
                 ) {
@@ -106,74 +98,80 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         bottomBar = {
-                            androidx.compose.material3.BottomAppBar(
-                                containerColor = Color(0xFFD09409),
-                                contentColor = Color.White
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    IconButton(onClick = { /* ação lista */ }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.utensils_solid_full),
-                                            contentDescription = "Lista",
-                                            tint = Color.White
-                                        )
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .width(1.dp)
-                                            .size(height = 24.dp, width = 1.dp)
-                                            .padding(horizontal = 4.dp)
-                                            .background(Color.White.copy(alpha = 0.5f))
-                                    )
-
-                                    IconButton(onClick = { /* ação lupa */ }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.magnifying_glass_solid_full),
-                                            contentDescription = "Buscar",
-                                            tint = Color.White
-                                        )
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .width(1.dp)
-                                            .size(height = 24.dp, width = 1.dp)
-                                            .padding(horizontal = 4.dp)
-                                            .background(Color.White.copy(alpha = 0.5f))
-                                    )
-
-                                    IconButton(onClick = { /* ação carrinho */ }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.cart_shopping_solid_full),
-                                            contentDescription = "Carrinho",
-                                            tint = Color.White
-                                        )
-                                    }
-                                }
-                            }
+                            BottomAppBarCustom(navController)
                         },
                         modifier = Modifier.fillMaxSize()
                     ) { innerPadding ->
-                        Column(modifier = Modifier.padding(innerPadding)) {
-                            GridTest()
+                        Box(modifier = Modifier.padding(innerPadding)) {
+                            AppNavigation(navController = navController)
                         }
                     }
                 }
             }
         }
     }
+}
 
+
+// ---------- Bottom Bar ----------
+@Composable
+fun BottomAppBarCustom(navController: NavHostController) {
+    BottomAppBar(
+        containerColor = Color(0xFFD09409),
+        contentColor = Color.White
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { navController.navigate("home") }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.utensils_solid_full),
+                    contentDescription = "Início",
+                    tint = Color.White
+                )
+            }
+
+            DividerVertical()
+
+            IconButton(onClick = { navController.navigate("search") }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.magnifying_glass_solid_full),
+                    contentDescription = "Buscar",
+                    tint = Color.White
+                )
+            }
+
+            DividerVertical()
+
+            IconButton(onClick = { navController.navigate("cart") }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.cart_shopping_solid_full),
+                    contentDescription = "Carrinho",
+                    tint = Color.White
+                )
+            }
+        }
+    }
 }
 
 @Composable
-fun DrawerItem(text: String) {
+fun DividerVertical() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(24.dp)
+            .background(Color.White.copy(alpha = 0.5f))
+    )
+}
+
+
+// ---------- Drawer Item ----------
+@Composable
+fun DrawerItem(text: String, onClick: () -> Unit) {
     Text(
         text = text,
         color = Color.White,
@@ -182,7 +180,104 @@ fun DrawerItem(text: String) {
             .padding(12.dp)
             .background(Color(0x33485C91))
             .padding(12.dp)
+            .clickable { onClick() }
     )
+}
+
+// ---------- Navegação ----------
+@Composable
+fun AppNavigation(navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = "home"
+    ) {
+        composable("home") { GridTest() }
+        composable("search") { SearchScreen() }
+        composable("cart") { CartScreen() }
+        composable("perfil") { PerfilScreen() }
+        composable("config") { ConfigScreen() }
+        composable("cardapio") { CardapioScreen() }
+    }
+}
+
+// ---------- Telas ----------
+
+@Composable
+fun PerfilScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFEBC8))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Tela de Perfil", color = Color(0xFF7A4A00), fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun ConfigScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF5E1))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Tela de Configurações", color = Color(0xFF7A4A00), fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun CardapioScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Tela de Cardápio", color = Color.DarkGray)
+    }
+}
+
+@Composable
+fun SearchScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Tela de Busca", color = Color.DarkGray)
+    }
+}
+
+@Composable
+fun CartScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Tela do Carrinho", color = Color.DarkGray)
+    }
+}
+
+@Composable
+fun AdminLoginScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Tela de Login de Admin", color = Color.DarkGray)
+    }
+}
+
+@Composable
+fun AdminPedidosScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Tela dos Pedidos, Admin Only!", color = Color.DarkGray)
+    }
 }
 
 
@@ -253,22 +348,22 @@ fun GridTest(){
 }
 
 @Composable
-fun ArtistCardRow(nome: String, ultimaVezOnline: String, modifier: Modifier){
+fun ArtistCardRow(nome: String, ultimaVezOnline: String, modifier: Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.padding(8.dp)
-    ){
+    ) {
         Image(
             painter = painterResource(id = R.drawable.checkered),
             contentDescription = "Imagem do artista $nome",
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape),
-            contentScale =  ContentScale.Crop
+            contentScale = ContentScale.Crop
         )
 
         Spacer(modifier = Modifier.width(8.dp))
-        Column{
+        Column {
             Text(
                 text = nome,
                 fontWeight = FontWeight.Bold
