@@ -37,26 +37,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val isAdminLogged = rememberSaveable { mutableStateOf(false) }
-            val cardapio = remember { mutableStateListOf<ItemCardapio>() }
-            val pedidos = remember { mutableStateListOf<Pedido>() }
-            val carrinho = remember { mutableStateListOf<ItemCarrinho>() }
+//            val isAdminLogged = rememberSaveable { mutableStateOf(false) }
+//            val cardapio = remember { mutableStateListOf<ItemCardapio>() }
+//            val pedidos = remember { mutableStateListOf<Pedido>() }
+//            val carrinho = remember { mutableStateListOf<ItemCarrinho>() }
             val viewModel = remember { AppViewModel() }
 //            AppNavigation(navController, isAdminLogged,cardapio,pedidos,carrinho)
 
             // Dados iniciais de exemplo
-            LaunchedEffect(Unit) {
-                if (cardapio.isEmpty()) {
-                    cardapio.addAll(
-                        listOf(
-                            ItemCardapio(1, "Pão Francês", 0.80),
-                            ItemCardapio(2, "Café com Leite", 4.50),
-                            ItemCardapio(3, "Coxinha", 6.00),
-                            ItemCardapio(4, "Pastel", 7.50)
-                        )
-                    )
-                }
-            }
+//            LaunchedEffect(Unit) {
+//                if (cardapio.isEmpty()) {
+//                    cardapio.addAll(
+//                        listOf(
+//                            ItemCardapio(1, "Pão Francês", 0.80),
+//                            ItemCardapio(2, "Café com Leite", 4.50),
+//                            ItemCardapio(3, "Coxinha", 6.00),
+//                            ItemCardapio(4, "Pastel", 7.50)
+//                        )
+//                    )
+//                }
+//            }
 
             MOBILELayoutTheme {
 
@@ -237,16 +237,6 @@ fun AppNavigation(navController: NavHostController, viewModel: AppViewModel) {
         composable("cardapio") { CardapioScreen(navController,viewModel) }
     }
 }
-//@Composable
-//fun AppNavigation(navController: NavHostController, viewModel: AppViewModel) {
-//    NavHost(navController, startDestination = "search") {
-//        composable("search") { SearchScreen(navController, viewModel) }
-//        composable("cardapio") { CardapioScreen(navController, viewModel) }
-//        composable("cart") { CartScreen(navController, viewModel) }
-//        composable("pedidos") { AdminPedidosScreen(navController, viewModel) }
-//        composable("edicao") { AdminEditarScreen(navController, viewModel) }
-//    }
-//}
 
 // ---------- Telas ----------
 
@@ -335,58 +325,85 @@ fun AdminLoginScreen(navController: NavHostController) {
 }
 
 
-
 @Composable
 fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel) {
-//    fun AdminEditarScreen(navController: NavHostController, cardapio: MutableList<ItemCardapio>) {
     var nome by remember { mutableStateOf("") }
     var preco by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFEBC8))
+            .padding(16.dp)
+    ) {
+        // Cabeçalho com botão de voltar
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
                     painter = painterResource(id = R.drawable.arrow_left_solid_full),
                     contentDescription = "Voltar",
-                    tint = Color.Unspecified, // mantém as cores originais da imagem
-//                    modifier = Modifier.size(24.dp)
+                    tint = Color.Unspecified
                 )
             }
             Text("Editar Cardápio", fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(16.dp))
-        OutlinedTextField(value = nome, onValueChange = { nome = it }, label = { Text("Nome") })
-        OutlinedTextField(value = preco, onValueChange = { preco = it }, label = { Text("Preço") })
+
+        // Inputs de nome e preço
+        OutlinedTextField(
+            value = nome,
+            onValueChange = { nome = it },
+            label = { Text("Nome do item") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = preco,
+            onValueChange = { preco = it },
+            label = { Text("Preço (ex: 4.50)") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(Modifier.height(8.dp))
-        Button(onClick = {
-            if (nome.isNotBlank() && preco.isNotBlank()) {
-//                cardapio.add(ItemCardapio(cardapio.size + 1, nome, preco.toDouble()))
-                nome = ""; preco = ""
-            }
-        }) {
-            Text("Adicionar Item")
+
+        // Botão de adicionar item
+        Button(
+            onClick = {
+                if (nome.isNotBlank() && preco.isNotBlank()) {
+                    viewModel.addMenuItem(nome, preco.toDoubleOrNull() ?: 0.0)
+                    nome = ""
+                    preco = ""
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Adicionar Item ao Cardápio")
         }
 
         Spacer(Modifier.height(16.dp))
-        Text("Itens atuais:")
-//        for (item in cardapio) {
-//            Row(
-//                modifier = Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text("${item.nome} - R$ %.2f".format(item.preco))
-//                IconButton(onClick = { navController.popBackStack() }) {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.trash_solid_full),
-//                        contentDescription = "Remover",
-//                        tint = Color.Unspecified, // mantém as cores originais da imagem
-////                    modifier = Modifier.size(24.dp)
-//                    )
-//                }
-//            }
-//        }
+
+        // Itens atuais do cardápio
+        Text("Itens atuais:", fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+
+        viewModel.menuItems.forEach { item ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("${item.name} - R$ %.2f".format(item.price))
+                IconButton(onClick = { viewModel.removeMenuItem(item) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.trash_solid_full),
+                        contentDescription = "Remover",
+                        tint = Color.Unspecified
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -394,6 +411,8 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
 @Composable
 fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
+        // Top bar
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
@@ -406,46 +425,63 @@ fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel
         }
 
         Spacer(Modifier.height(8.dp))
-        Text("Exemplo: pedidos aparecerão aqui quando finalizados.")
+
+        // Lista de pedidos
+        viewModel.pedidos.forEach { pedido ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .border(1.dp, Color.Gray)
+                    .padding(8.dp)
+            ) {
+                Text("Pedido #${pedido.id}")
+                Text("Mesa: ${pedido.mesa ?: "Não definido"}")
+                Spacer(Modifier.height(4.dp))
+
+                // Itens do pedido
+                pedido.itens.forEach { item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("${item.item.name} x${item.quantity.value}")  // <- .value
+                        Text("R$ %.2f".format(item.item.price * item.quantity.value))  // <- .value
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+                val total = pedido.itens.sumOf { it.item.price * it.quantity.value }  // <- .value
+                Text("Total: R$ %.2f".format(total), fontWeight = FontWeight.Bold)
+
+                Spacer(Modifier.height(4.dp))
+//                Text("Status: ${pedido.status}")
+                Text(
+                    "Status: ${
+                        when (pedido.status.value) {
+                            PedidoStatus.EM_ESPERA -> "Em espera"
+                            PedidoStatus.PREPARANDO -> "Preparando"
+                            PedidoStatus.PRONTO -> "Pronto"
+                            PedidoStatus.CONCLUIDO -> "Concluído"
+                        }
+                    }"
+                )
+
+
+                Row {
+                    Button(onClick = { viewModel.avancarPedido(pedido) }) {
+                        Text("Avançar")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { viewModel.regredirPedido(pedido) }) {
+                        Text("Regredir")
+                    }
+                }
+            }
+        }
     }
 }
 
-//@Composable
-//fun AdminPedidosScreen(navController: NavHostController, pedidos: MutableList<Pedido>) {
-//    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-//        Row(verticalAlignment = Alignment.CenterVertically) {
-//            IconButton(onClick = { navController.popBackStack() }) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.arrow_left_solid_full),
-//                    contentDescription = "Remover",
-//                    tint = Color.Unspecified, // mantém as cores originais da imagem
-////                    modifier = Modifier.size(24.dp)
-//                )
-//            }
-//            Text("Pedidos", fontWeight = FontWeight.Bold)
-//        }
-//        Spacer(Modifier.height(8.dp))
-//        for (pedido in pedidos) {
-//            Column(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(8.dp)
-//                    .border(1.dp, Color.Gray)
-//                    .padding(8.dp)
-//            ) {
-//                Text("Pedido #${pedido.id}")
-//                pedido.itens.forEach {
-//                    Text("- ${it.item.nome} x${it.quantidade}")
-//                }
-//                if (!pedido.completo) {
-//                    Button(onClick = { pedido.completo = true }) { Text("Marcar como completo") }
-//                } else {
-//                    Text("✅ Completo", color = Color.Green)
-//                }
-//            }
-//        }
-//    }
-//}
 
 
 @Composable
@@ -616,15 +652,9 @@ fun CartScreen(navController: NavHostController, viewModel: AppViewModel) {
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("${item.item.name} x${item.quantity}")
-                    Row {
-                        IconButton(onClick = { viewModel.removeFromCart(item.item) }) {
-                            Text("-")
-                        }
-                        IconButton(onClick = { viewModel.addToCart(item.item) }) {
-                            Text("+")
-                        }
-                    }
+                    Text("${item.item.name} x${item.quantity.value}")
+                    IconButton(onClick = { if (item.quantity.value > 1) item.quantity.value-- }) { Text("-") }
+                    IconButton(onClick = { item.quantity.value++ }) { Text("+") }
                 }
             }
 
@@ -632,8 +662,9 @@ fun CartScreen(navController: NavHostController, viewModel: AppViewModel) {
             Button(onClick = {
                 if (carrinho.isNotEmpty()) {
                     // aqui salvaria em pedidos admin
+                    viewModel.criarPedido(carrinho.toList())
                     carrinho.clear()
-                    navController.navigate("pedidos")
+                    //navController.navigate("pedidos")
                 }
             }) {
                 Text("Finalizar Pedido")
@@ -752,20 +783,30 @@ data class ItemCarrinho(
     var quantidade: Int
 )
 
-data class Pedido(
-    val id: Int,
-    val itens: List<ItemCarrinho>,
-    var completo: Boolean = false
-)
-
 class AppViewModel : ViewModel() {
+
+    // -------------------------------
+    // Estados do app
+    // -------------------------------
+    var isAdminLogged = mutableStateOf(false)
     var currentBakery by mutableStateOf<Bakery?>(null)
-    var cartItems = mutableStateListOf<CartItem>()
-    var bakeries = listOf(
+
+    var cartItems = mutableStateListOf<CartItem>()      // carrinho do usuário
+    var pedidos = mutableStateListOf<Pedido>()          // lista de pedidos
+    var menuItems = mutableStateListOf(                  // cardápio compartilhado
+        MenuItem("1", "Pão Francês", 1.50, R.drawable.checkered),
+        MenuItem("2", "Café com Leite", 3.00, R.drawable.checkered),
+        MenuItem("3", "Coxinha", 4.00, R.drawable.checkered)
+    )
+
+    val bakeries = listOf(
         Bakery("1", "Padaria Central", "Pães e bolos variados"),
         Bakery("2", "Padaria do Bairro", "Café, salgados e doces")
     )
 
+    // -------------------------------
+    // Funções do cliente
+    // -------------------------------
     fun selectBakery(bakery: Bakery) {
         currentBakery = bakery
         cartItems.clear() // limpa carrinho ao trocar padaria
@@ -773,22 +814,96 @@ class AppViewModel : ViewModel() {
 
     fun addToCart(item: MenuItem) {
         val existing = cartItems.find { it.item.id == item.id }
-        if (existing != null) existing.quantity++
-        else cartItems.add(CartItem(item, 1))
+        if (existing != null) {
+            existing.quantity.value++   // <- usa .value
+        } else {
+            cartItems.add(CartItem(item))  // quantity já inicia como 1
+        }
     }
 
     fun removeFromCart(item: MenuItem) {
         val existing = cartItems.find { it.item.id == item.id }
         if (existing != null) {
-            if (existing.quantity > 1) existing.quantity--
-            else cartItems.remove(existing)
+            if (existing.quantity.value > 1) {
+                existing.quantity.value--  // <- usa .value
+            } else {
+                cartItems.remove(existing)
+            }
         }
     }
+
+
+    fun criarPedido(itens: List<CartItem>) {
+        if (itens.isEmpty()) return
+        val novoPedido = Pedido(
+            id = pedidos.size + 1,
+            itens = itens.toList()
+        )
+        pedidos.add(novoPedido)
+    }
+
+
+    // -------------------------------
+    // Funções do admin
+    // -------------------------------
+    fun addMenuItem(name: String, price: Double) {
+        val newId = (menuItems.size + 1).toString()
+        menuItems.add(
+            MenuItem(
+                id = newId,
+                name = name,
+                price = price,
+                image = R.drawable.checkered
+            )
+        )
+    }
+
+    fun removeMenuItem(item: MenuItem) {
+        menuItems.remove(item)
+    }
+
+    fun avancarPedido(pedido: Pedido) {
+        pedido.status.value = when (pedido.status.value) {
+            PedidoStatus.EM_ESPERA -> PedidoStatus.PREPARANDO
+            PedidoStatus.PREPARANDO -> PedidoStatus.PRONTO
+            PedidoStatus.PRONTO -> PedidoStatus.CONCLUIDO
+            PedidoStatus.CONCLUIDO -> PedidoStatus.CONCLUIDO
+        }
+    }
+
+    fun regredirPedido(pedido: Pedido) {
+        pedido.status.value = when (pedido.status.value) {
+            PedidoStatus.CONCLUIDO -> PedidoStatus.PRONTO
+            PedidoStatus.PRONTO -> PedidoStatus.PREPARANDO
+            PedidoStatus.PREPARANDO -> PedidoStatus.EM_ESPERA
+            PedidoStatus.EM_ESPERA -> PedidoStatus.EM_ESPERA
+        }
+    }
+
 }
+
 
 data class Bakery(val id: String, val name: String, val description: String)
 data class MenuItem(val id: String, val name: String, val price: Double, val image: Int)
-data class CartItem(val item: MenuItem, var quantity: Int)
+data class CartItem(
+    val item: MenuItem,
+    var quantity: MutableState<Int> = mutableStateOf(1)
+)
+
+
+enum class PedidoStatus {
+    EM_ESPERA,
+    PREPARANDO,
+    PRONTO,
+    CONCLUIDO
+}
+
+data class Pedido(
+    val id: Int,
+    val itens: List<CartItem>,
+    var status: MutableState<PedidoStatus> = mutableStateOf(PedidoStatus.EM_ESPERA),
+    val mesa: String? = null // futuro
+)
 
 
 @Preview(showBackground = true)
