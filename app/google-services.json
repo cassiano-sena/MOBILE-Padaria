@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "322358690396",
+    "project_id": "mobile-padaria",
+    "storage_bucket": "mobile-padaria.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322358690396:android:cad6ab1cbbf33f51055c99",
+        "android_client_info": {
+          "package_name": "com.example.mobile_layout"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALvfHajjoLI4N3VeiXNp--s2ZqbiaPBgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

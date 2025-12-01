@@ -1,5 +1,6 @@
 package com.example.mobile_layout
 
+// --- Android / Compose / Lifecycle ---
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,46 +21,44 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.*
-import com.example.mobile_layout.ui.theme.MOBILELayoutTheme
 import kotlinx.coroutines.launch
 
+// --- Firebase ---
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.toObject
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.DocumentSnapshot
+
+// --- Theme / resources ---
+import com.example.mobile_layout.ui.theme.MOBILELayoutTheme
+
+// ----------------------------
+// MainActivity
+// ----------------------------
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-//            val isAdminLogged = rememberSaveable { mutableStateOf(false) }
-//            val cardapio = remember { mutableStateListOf<ItemCardapio>() }
-//            val pedidos = remember { mutableStateListOf<Pedido>() }
-//            val carrinho = remember { mutableStateListOf<ItemCarrinho>() }
-            val viewModel = remember { AppViewModel() }
-//            AppNavigation(navController, isAdminLogged,cardapio,pedidos,carrinho)
 
-            // Dados iniciais de exemplo
-//            LaunchedEffect(Unit) {
-//                if (cardapio.isEmpty()) {
-//                    cardapio.addAll(
-//                        listOf(
-//                            ItemCardapio(1, "Pão Francês", 0.80),
-//                            ItemCardapio(2, "Café com Leite", 4.50),
-//                            ItemCardapio(3, "Coxinha", 6.00),
-//                            ItemCardapio(4, "Pastel", 7.50)
-//                        )
-//                    )
-//                }
-//            }
+        // initialize Firebase (assumes google-services.json and gradle setup already added)
+        FirebaseApp.initializeApp(this)
+
+        setContent {
+            val viewModel = remember { AppViewModel() }
 
             MOBILELayoutTheme {
-
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
                 val navController = rememberNavController()
@@ -127,8 +126,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize()
                     ) { innerPadding ->
                         Box(modifier = Modifier.padding(innerPadding)) {
-//                            AppNavigation(navController = navController, isAdminLogged,cardapio,pedidos,carrinho)
-                            AppNavigation(navController = navController,viewModel)
+                            AppNavigation(navController = navController, viewModel = viewModel)
                         }
                     }
                 }
@@ -137,8 +135,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-// ---------- Bottom Bar ----------
+// ----------------------------
+// UI helpers (unchanged)
+// ----------------------------
 @Composable
 fun BottomAppBarCustom(navController: NavHostController) {
     BottomAppBar(
@@ -193,8 +192,6 @@ fun DividerVertical() {
     )
 }
 
-
-// ---------- Drawer Item ----------
 @Composable
 fun DrawerItem(text: String, onClick: () -> Unit) {
     Text(
@@ -209,37 +206,31 @@ fun DrawerItem(text: String, onClick: () -> Unit) {
     )
 }
 
-// ---------- Navegação ----------
+// ----------------------------
+// Navigation
+// ----------------------------
 @Composable
-//fun AppNavigation(navController: NavHostController, isAdminLogged: MutableState<Boolean>, cardapio: MutableList<ItemCardapio>, pedidos: MutableList<Pedido>, carrinho: MutableList<ItemCarrinho>) {
 fun AppNavigation(navController: NavHostController, viewModel: AppViewModel) {
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
-//        composable("home") { GridTest() }
-//        composable("search") { SearchScreen() }
-//        composable("cart") { CartScreen(carrinho, pedidos) }
-//        composable("adminMenu") { AdminMenuScreen(navController) }
-//        composable("login") { AdminLoginScreen(navController, isAdminLogged) }
-//        composable("pedidos") { AdminPedidosScreen(navController, pedidos) }
-//        composable("edicao") { AdminEditarScreen(navController, cardapio) }
-//        composable("config") { ConfigScreen() }
-//        composable("cardapio") { CardapioScreen(cardapio,carrinho) }
         composable("home") { GridTest() }
         composable("search") { SearchScreen(navController, viewModel) }
-        composable("cart") { CartScreen(navController,viewModel) }
+        composable("cart") { CartScreen(navController, viewModel) }
         composable("adminMenu") { AdminMenuScreen(navController) }
         composable("login") { AdminLoginScreen(navController) }
         composable("pedidos") { AdminPedidosScreen(navController, viewModel) }
         composable("edicao") { AdminEditarScreen(navController, viewModel) }
         composable("config") { ConfigScreen() }
-        composable("cardapio") { CardapioScreen(navController,viewModel) }
+        composable("cardapio") { CardapioScreen(navController, viewModel) }
+        composable("createPadaria") { CreatePadariaScreen(navController, viewModel) }
     }
 }
 
-// ---------- Telas ----------
-
+// ----------------------------
+// Screens (mostly unchanged)
+// ----------------------------
 @Composable
 fun AdminMenuScreen(navController: NavHostController) {
     Column(
@@ -275,6 +266,15 @@ fun AdminMenuScreen(navController: NavHostController) {
             Text("Editar Cardápio", color = Color.White)
         }
 
+        Spacer(Modifier.height(24.dp))
+
+        Button(
+            onClick = { navController.navigate("createPadaria") },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD09409))
+        ) {
+            Text("Criar nova padaria", color = Color.White)
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedButton(
@@ -288,7 +288,6 @@ fun AdminMenuScreen(navController: NavHostController) {
 
 @Composable
 fun AdminLoginScreen(navController: NavHostController) {
-//    fun AdminLoginScreen(navController: NavHostController, isAdminLogged: MutableState<Boolean>) {
     var user by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
 
@@ -313,7 +312,6 @@ fun AdminLoginScreen(navController: NavHostController) {
         Button(
             onClick = {
                 if (user == "admin" && pass == "1234") {
-//                    isAdminLogged.value = true
                     navController.navigate("adminMenu")
                 }
             },
@@ -323,7 +321,6 @@ fun AdminLoginScreen(navController: NavHostController) {
         }
     }
 }
-
 
 @Composable
 fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel) {
@@ -336,7 +333,6 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
             .background(Color(0xFFFFEBC8))
             .padding(16.dp)
     ) {
-        // Cabeçalho com botão de voltar
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
@@ -350,7 +346,6 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
 
         Spacer(Modifier.height(16.dp))
 
-        // Inputs de nome e preço
         OutlinedTextField(
             value = nome,
             onValueChange = { nome = it },
@@ -366,11 +361,10 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
 
         Spacer(Modifier.height(8.dp))
 
-        // Botão de adicionar item
         Button(
             onClick = {
                 if (nome.isNotBlank() && preco.isNotBlank()) {
-                    viewModel.addMenuItem(nome, preco.toDoubleOrNull() ?: 0.0)
+                    viewModel.addMenuItemFirestore(nome, preco.toDoubleOrNull() ?: 0.0)
                     nome = ""
                     preco = ""
                 }
@@ -382,7 +376,6 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
 
         Spacer(Modifier.height(16.dp))
 
-        // Itens atuais do cardápio
         Text("Itens atuais:", fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
 
@@ -395,7 +388,7 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("${item.name} - R$ %.2f".format(item.price))
-                IconButton(onClick = { viewModel.removeMenuItem(item) }) {
+                IconButton(onClick = { viewModel.removeMenuItemFirestore(item) }) {
                     Icon(
                         painter = painterResource(id = R.drawable.trash_solid_full),
                         contentDescription = "Remover",
@@ -407,12 +400,9 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
     }
 }
 
-
 @Composable
 fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-
-        // Top bar
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
@@ -426,7 +416,6 @@ fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel
 
         Spacer(Modifier.height(8.dp))
 
-        // Lista de pedidos
         viewModel.pedidos.forEach { pedido ->
             Column(
                 modifier = Modifier
@@ -439,23 +428,21 @@ fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel
                 Text("Mesa: ${pedido.mesa ?: "Não definido"}")
                 Spacer(Modifier.height(4.dp))
 
-                // Itens do pedido
                 pedido.itens.forEach { item ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("${item.item.name} x${item.quantity.value}")  // <- .value
-                        Text("R$ %.2f".format(item.item.price * item.quantity.value))  // <- .value
+                        Text("${item.item.name} x${item.quantity.value}")
+                        Text("R$ %.2f".format(item.item.price * item.quantity.value))
                     }
                 }
 
                 Spacer(Modifier.height(4.dp))
-                val total = pedido.itens.sumOf { it.item.price * it.quantity.value }  // <- .value
+                val total = pedido.itens.sumOf { it.item.price * it.quantity.value }
                 Text("Total: R$ %.2f".format(total), fontWeight = FontWeight.Bold)
 
                 Spacer(Modifier.height(4.dp))
-//                Text("Status: ${pedido.status}")
                 Text(
                     "Status: ${
                         when (pedido.status.value) {
@@ -467,13 +454,12 @@ fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel
                     }"
                 )
 
-
                 Row {
-                    Button(onClick = { viewModel.avancarPedido(pedido) }) {
+                    Button(onClick = { viewModel.avancarPedidoFirestore(pedido) }) {
                         Text("Avançar")
                     }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { viewModel.regredirPedido(pedido) }) {
+                    Button(onClick = { viewModel.regredirPedidoFirestore(pedido) }) {
                         Text("Regredir")
                     }
                 }
@@ -481,8 +467,6 @@ fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel
         }
     }
 }
-
-
 
 @Composable
 fun ConfigScreen() {
@@ -500,7 +484,7 @@ fun ConfigScreen() {
 
 @Composable
 fun CardapioScreen(navController: NavHostController, viewModel: AppViewModel) {
-    val padaria = viewModel.currentBakery
+    val padaria = viewModel.currentPadaria
     if (padaria == null) {
         Text("Selecione uma padaria primeiro.")
         return
@@ -509,13 +493,7 @@ fun CardapioScreen(navController: NavHostController, viewModel: AppViewModel) {
     var search by remember { mutableStateOf("") }
     var gridMode by remember { mutableStateOf(true) }
 
-    val itens = remember {
-        mutableStateListOf(
-            MenuItem("1", "Pão Francês", 0.8, R.drawable.checkered),
-            MenuItem("2", "Café com Leite", 4.5, R.drawable.checkered),
-            MenuItem("3", "Coxinha", 6.0, R.drawable.checkered),
-        )
-    }
+    val itens = viewModel.menuItems
 
     val filtrados = itens.filter { it.name.contains(search, ignoreCase = true) }
 
@@ -591,19 +569,28 @@ fun MenuCard(item: MenuItem, viewModel: AppViewModel) {
     }
 }
 
-
-
 @Composable
-fun SearchScreen(navController: NavHostController, viewModel: AppViewModel) {
+fun SearchScreen(
+    navController: NavHostController,
+    viewModel: AppViewModel
+) {
     var query by remember { mutableStateOf("") }
 
-    val padariasFiltradas = viewModel.bakeries.filter {
-        it.name.contains(query, ignoreCase = true) || it.id.contains(query)
+    // Carrega padarias quando a tela abre
+    LaunchedEffect(Unit) {
+        viewModel.loadPadariasFromFirestore()
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    val padariasFiltradas = viewModel.padariaState.filter { padaria ->
+        padaria.name.contains(query, ignoreCase = true) ||
+                padaria.id.contains(query, ignoreCase = true)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
 
         OutlinedTextField(
             value = query,
@@ -620,7 +607,7 @@ fun SearchScreen(navController: NavHostController, viewModel: AppViewModel) {
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
                     .clickable {
-                        viewModel.selectBakery(padaria)
+                        viewModel.selectPadaria(padaria)
                         navController.navigate("cardapio")
                     }
             ) {
@@ -633,11 +620,72 @@ fun SearchScreen(navController: NavHostController, viewModel: AppViewModel) {
     }
 }
 
+@Composable
+fun CreatePadariaScreen(
+    navController: NavHostController,
+    viewModel: AppViewModel
+) {
+    var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = { navController.popBackStack() }) {
+            Icon(
+                painter = painterResource(id = R.drawable.arrow_left_solid_full),
+                contentDescription = "Voltar",
+                tint = Color.Unspecified
+            )
+        }
+        Text("Editar Cardápio", fontWeight = FontWeight.Bold)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "DEBUG: Tela de criação de padarias",
+            color = Color.Red,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 20.dp)
+        )
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Nome da padaria") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Descrição") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = {
+                viewModel.createPadaria(name, description)
+                navController.popBackStack()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Salvar padaria")
+        }
+    }
+}
 
 
 @Composable
 fun CartScreen(navController: NavHostController, viewModel: AppViewModel) {
-    val padaria = viewModel.currentBakery ?: return Text("Selecione uma padaria.")
+    val padaria = viewModel.currentPadaria ?: return Text("Selecione uma padaria.")
     val carrinho = viewModel.cartItems
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -661,10 +709,8 @@ fun CartScreen(navController: NavHostController, viewModel: AppViewModel) {
             Spacer(Modifier.height(16.dp))
             Button(onClick = {
                 if (carrinho.isNotEmpty()) {
-                    // aqui salvaria em pedidos admin
-                    viewModel.criarPedido(carrinho.toList())
+                    viewModel.criarPedidoFirestore(carrinho.toList())
                     carrinho.clear()
-                    //navController.navigate("pedidos")
                 }
             }) {
                 Text("Finalizar Pedido")
@@ -673,223 +719,33 @@ fun CartScreen(navController: NavHostController, viewModel: AppViewModel) {
     }
 }
 
-
-
 @Composable
-fun GridTest(){
-//    val lista = listOf("Teste1","Teste2","Teste3")
-    val lista = listOf(
-        "Item 1" to "Descrição do item 1",
-        "Item 2" to "Descrição do item 2",
-        "Item 3" to "Descrição do item 3",
-        "Item 4" to "Descrição do item 4"
-    )
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalArrangement = Arrangement.spacedBy(100.dp),
+fun GridTest() {
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(5.dp)
-    ){
-        items(lista) { (nome, descricao) ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f) // deixa cada item quadrado
-            ) {
-                // Fundo com imagem
-                Image(
-                    painter = painterResource(id = R.drawable.checkered),
-                    contentDescription = "Imagem de fundo do $nome",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize()
-                )
-
-                // Sobreposição com gradiente escuro para facilitar leitura do texto
-                Canvas(
-                    modifier = Modifier.matchParentSize()
-                ) {
-                    drawRect(Color(0x88000000)) // semitransparente preto
-                }
-
-                // Conteúdo: ArtistCardRow + textos
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(12.dp)
-                ) {
-                    // Aqui chamamos ArtistCardRow dentro do card
-                    ArtistCardRow(
-                        nome = nome,
-                        ultimaVezOnline = "Online agora",
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    Text(
-                        text = nome,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = descricao,
-                        color = Color.White.copy(alpha = 0.8f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ArtistCardRow(nome: String, ultimaVezOnline: String, modifier: Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(8.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.checkered),
-            contentDescription = "Imagem do artista $nome",
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
+        Text(
+            text = "MOBILE-PADARIA",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF8B4513),
+            textAlign = TextAlign.Center
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(
-                text = nome,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = ultimaVezOnline,
-                color = Color.Gray,
-            )
-        }
     }
 }
 
-// ---------- Persistencia ----------
-
-data class ItemCardapio(
-    val id: Int,
-    var nome: String,
-    var preco: Double
-)
-
-data class ItemCarrinho(
-    val item: ItemCardapio,
-    var quantidade: Int
-)
-
-class AppViewModel : ViewModel() {
-
-    // -------------------------------
-    // Estados do app
-    // -------------------------------
-    var isAdminLogged = mutableStateOf(false)
-    var currentBakery by mutableStateOf<Bakery?>(null)
-
-    var cartItems = mutableStateListOf<CartItem>()      // carrinho do usuário
-    var pedidos = mutableStateListOf<Pedido>()          // lista de pedidos
-    var menuItems = mutableStateListOf(                  // cardápio compartilhado
-        MenuItem("1", "Pão Francês", 1.50, R.drawable.checkered),
-        MenuItem("2", "Café com Leite", 3.00, R.drawable.checkered),
-        MenuItem("3", "Coxinha", 4.00, R.drawable.checkered)
-    )
-
-    val bakeries = listOf(
-        Bakery("1", "Padaria Central", "Pães e bolos variados"),
-        Bakery("2", "Padaria do Bairro", "Café, salgados e doces")
-    )
-
-    // -------------------------------
-    // Funções do cliente
-    // -------------------------------
-    fun selectBakery(bakery: Bakery) {
-        currentBakery = bakery
-        cartItems.clear() // limpa carrinho ao trocar padaria
-    }
-
-    fun addToCart(item: MenuItem) {
-        val existing = cartItems.find { it.item.id == item.id }
-        if (existing != null) {
-            existing.quantity.value++   // <- usa .value
-        } else {
-            cartItems.add(CartItem(item))  // quantity já inicia como 1
-        }
-    }
-
-    fun removeFromCart(item: MenuItem) {
-        val existing = cartItems.find { it.item.id == item.id }
-        if (existing != null) {
-            if (existing.quantity.value > 1) {
-                existing.quantity.value--  // <- usa .value
-            } else {
-                cartItems.remove(existing)
-            }
-        }
-    }
-
-
-    fun criarPedido(itens: List<CartItem>) {
-        if (itens.isEmpty()) return
-        val novoPedido = Pedido(
-            id = pedidos.size + 1,
-            itens = itens.toList()
-        )
-        pedidos.add(novoPedido)
-    }
-
-
-    // -------------------------------
-    // Funções do admin
-    // -------------------------------
-    fun addMenuItem(name: String, price: Double) {
-        val newId = (menuItems.size + 1).toString()
-        menuItems.add(
-            MenuItem(
-                id = newId,
-                name = name,
-                price = price,
-                image = R.drawable.checkered
-            )
-        )
-    }
-
-    fun removeMenuItem(item: MenuItem) {
-        menuItems.remove(item)
-    }
-
-    fun avancarPedido(pedido: Pedido) {
-        pedido.status.value = when (pedido.status.value) {
-            PedidoStatus.EM_ESPERA -> PedidoStatus.PREPARANDO
-            PedidoStatus.PREPARANDO -> PedidoStatus.PRONTO
-            PedidoStatus.PRONTO -> PedidoStatus.CONCLUIDO
-            PedidoStatus.CONCLUIDO -> PedidoStatus.CONCLUIDO
-        }
-    }
-
-    fun regredirPedido(pedido: Pedido) {
-        pedido.status.value = when (pedido.status.value) {
-            PedidoStatus.CONCLUIDO -> PedidoStatus.PRONTO
-            PedidoStatus.PRONTO -> PedidoStatus.PREPARANDO
-            PedidoStatus.PREPARANDO -> PedidoStatus.EM_ESPERA
-            PedidoStatus.EM_ESPERA -> PedidoStatus.EM_ESPERA
-        }
-    }
-
-}
-
-
-data class Bakery(val id: String, val name: String, val description: String)
+// ----------------------------
+// Data / Persistence with Firestore
+// ----------------------------
+data class Padaria(val id: String, val name: String, val description: String)
 data class MenuItem(val id: String, val name: String, val price: Double, val image: Int)
 data class CartItem(
     val item: MenuItem,
     var quantity: MutableState<Int> = mutableStateOf(1)
 )
-
 
 enum class PedidoStatus {
     EM_ESPERA,
@@ -902,10 +758,259 @@ data class Pedido(
     val id: Int,
     val itens: List<CartItem>,
     var status: MutableState<PedidoStatus> = mutableStateOf(PedidoStatus.EM_ESPERA),
-    val mesa: String? = null // futuro
+    val mesa: String? = null,
+    val firestoreId: String? = null
 )
 
+class AppViewModel : ViewModel() {
 
+    // -------------------------------
+    // Estados do app
+    // -------------------------------
+    var isAdminLogged = mutableStateOf(false)
+    var currentPadaria by mutableStateOf<Padaria?>(null)
+
+    var cartItems = mutableStateListOf<CartItem>()      // carrinho do usuário
+    var pedidos = mutableStateListOf<Pedido>()          // lista de pedidos
+    var menuItems = mutableStateListOf<MenuItem>()      // cardápio sincronizado com Firestore
+
+    var padariaState = mutableStateListOf<Padaria>()
+
+    fun loadPadariasFromFirestore() {
+        db.collection("padaria")
+            .get()
+            .addOnSuccessListener { result ->
+                val list = result.documents.mapNotNull { doc ->
+                    val id = doc.id
+                    val name = doc.getString("name") ?: return@mapNotNull null
+                    val description = doc.getString("description") ?: ""
+                    Padaria(id, name, description)
+                }
+
+                padariaState.clear()
+                padariaState.addAll(list)
+            }
+    }
+
+    // Firestore
+    private val db = Firebase.firestore
+    private var menuListener: ListenerRegistration? = null
+    private var pedidosListener: ListenerRegistration? = null
+
+    init {
+        // start listening to collections
+        listenMenuFirestore()
+        listenPedidosFirestore()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        menuListener?.remove()
+        pedidosListener?.remove()
+    }
+
+    // -------------------------------
+    // Firestore: Menu
+    // -------------------------------
+    private fun listenMenuFirestore() {
+        val padaria = currentPadaria ?: return
+
+        menuListener = db.collection("menu")
+            .whereEqualTo("padariaId", padaria.id)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    // log error if needed
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    // rebuild list
+                    val newList = snapshot.documents.mapNotNull { doc ->
+                        val name = doc.getString("name") ?: return@mapNotNull null
+                        val price = doc.getDouble("price") ?: (doc.getLong("price")?.toDouble())
+                        val id = doc.id
+                        MenuItem(
+                            id = id,
+                            name = name,
+                            price = price ?: 0.0,
+                            image = R.drawable.checkered // images are local resources; adjust if you host URLs
+                        )
+                    }
+                    menuItems.apply {
+                        clear()
+                        addAll(newList)
+                    }
+                }
+            }
+    }
+
+    fun addMenuItemFirestore(name: String, price: Double) {
+        val padaria = currentPadaria ?: return
+
+        val data = hashMapOf(
+            "name" to name,
+            "price" to price,
+            "padariaId" to padaria.id
+        )
+
+        db.collection("menu").add(data)
+    }
+
+
+    fun removeMenuItemFirestore(item: MenuItem) {
+        // item.id is expected to be the Firestore document id
+        if (item.id.isNotBlank()) {
+            db.collection("menu").document(item.id).delete()
+                .addOnFailureListener {
+                    // handle error if necessary
+                }
+        } else {
+            // fallback: remove locally
+            menuItems.remove(item)
+        }
+    }
+
+    // -------------------------------
+    // Firestore: Pedidos
+    // -------------------------------
+    private fun listenPedidosFirestore() {
+        pedidosListener?.remove()
+
+        val padaria = currentPadaria ?: return
+
+        pedidosListener = db.collection("pedidos")
+            .whereEqualTo("padariaId", padaria.id)
+            .orderBy("createdAt")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    pedidos.clear()
+                    pedidos.addAll(
+                        snapshot.documents.mapNotNull { mapDocumentToPedido(it) }
+                    )
+                }
+            }
+    }
+
+    fun criarPedidoFirestore(itens: List<CartItem>) {
+        val padaria = currentPadaria ?: return
+
+        val idGerado = System.currentTimeMillis()
+
+        val data = hashMapOf(
+            "id" to idGerado,
+            "padariaId" to padaria.id,
+            "createdAt" to idGerado,
+            "status" to "EM_ESPERA",
+            "mesa" to "1",
+            "itens" to itens.map {
+                hashMapOf(
+                    "id" to it.item.id,
+                    "name" to it.item.name,
+                    "price" to it.item.price,
+                    "quantity" to it.quantity.value
+                )
+            }
+        )
+
+        db.collection("pedidos").add(data)
+    }
+
+    private fun mapDocumentToPedido(doc: DocumentSnapshot): Pedido? {
+
+        // Campos principais
+        val id = doc.getLong("id")?.toInt() ?: return null
+        val mesa = doc.getString("mesa") ?: "?"
+        val statusString = doc.getString("status") ?: "EM_ESPERA"
+        val status = PedidoStatus.valueOf(statusString)
+
+        val itensListRaw = doc.get("items") as? List<Map<String, Any?>> ?: emptyList()
+
+        val itens = itensListRaw.map { item ->
+            CartItem(
+                item = MenuItem(
+                    id = item["id"] as String,
+                    name = item["name"] as String,
+                    price = (item["price"] as Number).toDouble(),
+                    image = R.drawable.checkered
+                ),
+                quantity = mutableStateOf((item["quantity"] as Number).toInt())
+            )
+        }
+
+        return Pedido(
+            id = id,
+            itens = itens,
+            mesa = mesa,
+            status = mutableStateOf(status),
+            firestoreId = doc.id
+        )
+    }
+
+
+
+    // advance/regress update in Firestore
+    fun avancarPedidoFirestore(pedido: Pedido) {
+        val next = when (pedido.status.value) {
+            PedidoStatus.EM_ESPERA -> PedidoStatus.PREPARANDO
+            PedidoStatus.PREPARANDO -> PedidoStatus.PRONTO
+            PedidoStatus.PRONTO -> PedidoStatus.CONCLUIDO
+            PedidoStatus.CONCLUIDO -> PedidoStatus.CONCLUIDO
+        }
+        updatePedidoStatusFirestore(pedido, next)
+    }
+
+    fun regredirPedidoFirestore(pedido: Pedido) {
+        val prev = when (pedido.status.value) {
+            PedidoStatus.CONCLUIDO -> PedidoStatus.PRONTO
+            PedidoStatus.PRONTO -> PedidoStatus.PREPARANDO
+            PedidoStatus.PREPARANDO -> PedidoStatus.EM_ESPERA
+            PedidoStatus.EM_ESPERA -> PedidoStatus.EM_ESPERA
+        }
+        updatePedidoStatusFirestore(pedido, prev)
+    }
+
+    private fun updatePedidoStatusFirestore(pedido: Pedido, status: PedidoStatus) {
+        val docId = pedido.firestoreId ?: return
+        db.collection("pedidos").document(docId)
+            .update("status", status.name)
+            .addOnFailureListener {
+                // handle error
+            }
+        // snapshot listener will update local list accordingly
+    }
+
+    // -------------------------------
+    // Cliente: Carrinho / Menu local operations (still supported)
+    // -------------------------------
+    fun selectPadaria(p: Padaria) {
+        currentPadaria = p
+        listenMenuFirestore()
+        listenPedidosFirestore()
+    }
+
+    fun createPadaria(name: String, description: String) {
+        val data = hashMapOf(
+            "name" to name,
+            "description" to description
+        )
+
+        Firebase.firestore.collection("padaria")
+            .add(data)
+    }
+
+
+    fun addToCart(item: MenuItem) {
+        val existing = cartItems.find { it.item.id == item.id }
+        if (existing != null) {
+            existing.quantity.value++
+        } else {
+            cartItems.add(CartItem(item))
+        }
+    }
+}
+
+// ----------------------------
+// Preview
+// ----------------------------
 @Preview(showBackground = true)
 @Composable
 fun GridPreview() {
