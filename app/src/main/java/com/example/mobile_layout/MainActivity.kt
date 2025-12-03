@@ -1,21 +1,24 @@
 package com.example.mobile_layout
 
-// --- Android / Compose / Lifecycle ---
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -32,16 +35,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
-
-// --- Firebase ---
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.toObject
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.DocumentSnapshot
-
-// --- Theme / resources ---
 import com.example.mobile_layout.ui.theme.MOBILELayoutTheme
 
 // ----------------------------
@@ -52,11 +51,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // initialize Firebase (assumes google-services.json and gradle setup already added)
+        // inicia farebase
         FirebaseApp.initializeApp(this)
 
         setContent {
-            val viewModel = remember { AppViewModel() }
+            val viewModel = remember { AppViewModel() } // ViewModel
 
             MOBILELayoutTheme {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -87,9 +86,9 @@ class MainActivity : ComponentActivity() {
                                 scope.launch { drawerState.close() }
                                 navController.navigate("config")
                             }
-                            DrawerItem("Sair") {
-                                // ação de sair
-                            }
+//                            DrawerItem("Sair") {
+//                                // ação de sair
+//                            }
                         }
                     }
                 ) {
@@ -136,7 +135,7 @@ class MainActivity : ComponentActivity() {
 }
 
 // ----------------------------
-// UI helpers (unchanged)
+// UI helpers
 // ----------------------------
 @Composable
 fun BottomAppBarCustom(navController: NavHostController) {
@@ -229,7 +228,7 @@ fun AppNavigation(navController: NavHostController, viewModel: AppViewModel) {
 }
 
 // ----------------------------
-// Screens (mostly unchanged)
+// Screens
 // ----------------------------
 @Composable
 fun AdminMenuScreen(navController: NavHostController) {
@@ -399,10 +398,10 @@ fun AdminEditarScreen(navController: NavHostController, viewModel: AppViewModel)
         }
     }
 }
-
 @Composable
 fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
@@ -416,51 +415,55 @@ fun AdminPedidosScreen(navController: NavHostController, viewModel: AppViewModel
 
         Spacer(Modifier.height(8.dp))
 
-        viewModel.pedidos.forEach { pedido ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .border(1.dp, Color.Gray)
-                    .padding(8.dp)
-            ) {
-                Text("Pedido #${pedido.id}")
-                Text("Mesa: ${pedido.mesa ?: "Não definido"}")
-                Spacer(Modifier.height(4.dp))
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(viewModel.pedidos) { pedido ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .border(1.dp, Color.Gray)
+                        .padding(8.dp)
+                ) {
+                    Text("Pedido #${pedido.id}")
+                    Text("Mesa: ${pedido.mesa ?: "Não definido"}")
+                    Spacer(Modifier.height(4.dp))
 
-                pedido.itens.forEach { item ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("${item.item.name} x${item.quantity.value}")
-                        Text("R$ %.2f".format(item.item.price * item.quantity.value))
-                    }
-                }
-
-                Spacer(Modifier.height(4.dp))
-                val total = pedido.itens.sumOf { it.item.price * it.quantity.value }
-                Text("Total: R$ %.2f".format(total), fontWeight = FontWeight.Bold)
-
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Status: ${
-                        when (pedido.status.value) {
-                            PedidoStatus.EM_ESPERA -> "Em espera"
-                            PedidoStatus.PREPARANDO -> "Preparando"
-                            PedidoStatus.PRONTO -> "Pronto"
-                            PedidoStatus.CONCLUIDO -> "Concluído"
+                    pedido.itens.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("${item.item.name} x${item.quantity.value}")
+                            Text("R$ %.2f".format(item.item.price * item.quantity.value))
                         }
-                    }"
-                )
-
-                Row {
-                    Button(onClick = { viewModel.avancarPedidoFirestore(pedido) }) {
-                        Text("Avançar")
                     }
-                    Spacer(Modifier.width(8.dp))
-                    Button(onClick = { viewModel.regredirPedidoFirestore(pedido) }) {
-                        Text("Regredir")
+
+                    Spacer(Modifier.height(4.dp))
+                    val total = pedido.itens.sumOf { it.item.price * it.quantity.value }
+                    Text("Total: R$ %.2f".format(total), fontWeight = FontWeight.Bold)
+
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Status: ${
+                            when (pedido.status.value) {
+                                PedidoStatus.EM_ESPERA -> "Em espera"
+                                PedidoStatus.PREPARANDO -> "Preparando"
+                                PedidoStatus.PRONTO -> "Pronto"
+                                PedidoStatus.CONCLUIDO -> "Concluído"
+                            }
+                        }"
+                    )
+
+                    Row {
+                        Button(onClick = { viewModel.avancarPedidoFirestore(pedido) }) {
+                            Text("Avançar")
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Button(onClick = { viewModel.regredirPedidoFirestore(pedido) }) {
+                            Text("Regredir")
+                        }
                     }
                 }
             }
@@ -494,46 +497,76 @@ fun CardapioScreen(navController: NavHostController, viewModel: AppViewModel) {
     var gridMode by remember { mutableStateOf(true) }
 
     val itens = viewModel.menuItems
-
     val filtrados = itens.filter { it.name.contains(search, ignoreCase = true) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Padaria: ${padaria.name}", fontWeight = FontWeight.Bold)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.bakery),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize()
+        )
+
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(12.dp))
+                    .background(
+                        color = Color.White.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(12.dp)
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "Padaria: ${padaria.name}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = search,
+                            onValueChange = { search = it },
+                            label = { Text("Pesquisar no cardápio") },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(onClick = { gridMode = !gridMode }) {
+                            Icon(
+                                painterResource(
+                                    id = if (gridMode) R.drawable.list_solid_full else R.drawable.list_solid_full
+                                ),
+                                contentDescription = "Trocar layout",
+                                tint = Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (gridMode)
+                LazyVerticalGrid(columns = GridCells.Fixed(2)) {
+                    items(filtrados) { item -> MenuCard(item, viewModel) }
+                }
+            else
+                LazyColumn {
+                    items(filtrados) { item -> MenuCard(item, viewModel) }
+                }
         }
-
-        Spacer(Modifier.height(8.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                label = { Text("Pesquisar no cardápio") },
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = { gridMode = !gridMode }) {
-                Icon(
-                    painterResource(
-                        id = if (gridMode) R.drawable.list_solid_full else R.drawable.list_solid_full
-                    ),
-                    contentDescription = "Trocar layout",
-                    tint = Color.Gray
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        if (gridMode)
-            LazyVerticalGrid(columns = GridCells.Fixed(2)) {
-                items(filtrados) { item -> MenuCard(item, viewModel) }
-            }
-        else
-            LazyColumn {
-                items(filtrados) { item -> MenuCard(item, viewModel) }
-            }
     }
 }
+
 
 @Composable
 fun MenuCard(item: MenuItem, viewModel: AppViewModel) {
@@ -645,6 +678,9 @@ fun CreatePadariaScreen(
             .padding(16.dp)
     ) {
 
+        Spacer(Modifier.height(32.dp))
+
+
         Text(
             text = "DEBUG: Tela de criação de padarias",
             color = Color.Red,
@@ -724,21 +760,43 @@ fun GridTest() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "MOBILE-PADARIA",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF8B4513),
-            textAlign = TextAlign.Center
+        Image(
+            painter = painterResource(id = R.drawable.bread_basket),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize()
         )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = Color.White.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Text(
+                    text = "MOBILE-PADARIA",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF8B4513),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
     }
 }
 
+
 // ----------------------------
-// Data / Persistence with Firestore
+// Persistencia com Firestore
 // ----------------------------
 data class Padaria(val id: String, val name: String, val description: String)
 data class MenuItem(val id: String, val name: String, val price: Double, val image: Int)
@@ -832,7 +890,7 @@ class AppViewModel : ViewModel() {
                             id = id,
                             name = name,
                             price = price ?: 0.0,
-                            image = R.drawable.checkered // images are local resources; adjust if you host URLs
+                            image = R.drawable.checkered // aqui trocar imagm
                         )
                     }
                     menuItems.apply {
@@ -857,11 +915,10 @@ class AppViewModel : ViewModel() {
 
 
     fun removeMenuItemFirestore(item: MenuItem) {
-        // item.id is expected to be the Firestore document id
         if (item.id.isNotBlank()) {
             db.collection("menu").document(item.id).delete()
                 .addOnFailureListener {
-                    // handle error if necessary
+                    // handle error
                 }
         } else {
             // fallback: remove locally
@@ -916,13 +973,12 @@ class AppViewModel : ViewModel() {
 
     private fun mapDocumentToPedido(doc: DocumentSnapshot): Pedido? {
 
-        // Campos principais
         val id = doc.getLong("id")?.toInt() ?: return null
         val mesa = doc.getString("mesa") ?: "?"
         val statusString = doc.getString("status") ?: "EM_ESPERA"
         val status = PedidoStatus.valueOf(statusString)
 
-        val itensListRaw = doc.get("items") as? List<Map<String, Any?>> ?: emptyList()
+        val itensListRaw = doc.get("itens") as? List<Map<String, Any?>> ?: emptyList()
 
         val itens = itensListRaw.map { item ->
             CartItem(
@@ -947,7 +1003,7 @@ class AppViewModel : ViewModel() {
 
 
 
-    // advance/regress update in Firestore
+    // avançar e regredir no Firestore
     fun avancarPedidoFirestore(pedido: Pedido) {
         val next = when (pedido.status.value) {
             PedidoStatus.EM_ESPERA -> PedidoStatus.PREPARANDO
@@ -975,11 +1031,10 @@ class AppViewModel : ViewModel() {
             .addOnFailureListener {
                 // handle error
             }
-        // snapshot listener will update local list accordingly
     }
 
     // -------------------------------
-    // Cliente: Carrinho / Menu local operations (still supported)
+    // Cliente: Carrinho / Menu local
     // -------------------------------
     fun selectPadaria(p: Padaria) {
         currentPadaria = p
